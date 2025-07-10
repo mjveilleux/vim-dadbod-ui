@@ -17,6 +17,31 @@ function! s:results_parser(results, delimiter, min_len) abort
   return filter(mapped,'len(v:val) ==? '.min_len)
 endfunction
 
+
+" Add SQL Server specific parser that trims trailing whitespace
+function! s:sqlserver_results_parser(results, min_len) abort
+  let filtered_results = a:results[0:-3]
+  if a:min_len ==? 1
+    return filter(filtered_results, '!empty(trim(v:val))')
+  endif
+  
+  " Split by delimiter and trim trailing whitespace from each cell
+  let mapped = map(filtered_results, {_,row -> 
+    \ map(filter(split(row, '|'), '!empty(trim(v:val))'), 
+    \     {_,cell -> substitute(cell, '\s\+$', '', '')})
+    \ })
+  
+  if a:min_len > 1
+    return filter(mapped, 'len(v:val) ==? '.a:min_len)
+  endif
+
+  let counts = map(copy(mapped), 'len(v:val)')
+  let min_len = max(counts)
+
+  return filter(mapped,'len(v:val) ==? '.min_len)
+endfunction
+
+
 let s:postgres_foreign_key_query = "
       \ SELECT ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name, ccu.table_schema as foreign_table_schema
       \ FROM
@@ -58,20 +83,20 @@ let s:postgresql = {
       \ 'quote': 1,
       \ }
 
-let s:sqlserver_foreign_keys_query = "
-      \ SELECT TOP 1 c2.table_name as foreign_table_name, kcu2.column_name as foreign_column_name, kcu2.table_schema as foreign_table_schema
-      \ from   information_schema.table_constraints c
-      \        inner join information_schema.key_column_usage kcu
-      \          on c.constraint_schema = kcu.constraint_schema and c.constraint_name = kcu.constraint_name
-      \        inner join information_schema.referential_constraints rc
-      \          on c.constraint_schema = rc.constraint_schema and c.constraint_name = rc.constraint_name
-      \        inner join information_schema.table_constraints c2
-      \          on rc.unique_constraint_schema = c2.constraint_schema and rc.unique_constraint_name = c2.constraint_name
-      \        inner join information_schema.key_column_usage kcu2
-      \          on c2.constraint_schema = kcu2.constraint_schema and c2.constraint_name = kcu2.constraint_name and kcu.ordinal_position = kcu2.ordinal_position
-      \ where  c.constraint_type = 'FOREIGN KEY'
-      \ and kcu.column_name = '{col_name}'
-      \ "
+" let s:sqlserver_foreign_keys_query = "
+"       \ SELECT TOP 1 c2.table_name as foreign_table_name, kcu2.column_name as foreign_column_name, kcu2.table_schema as foreign_table_schema
+"       \ from   information_schema.table_constraints c
+"       \        inner join information_schema.key_column_usage kcu
+"       \          on c.constraint_schema = kcu.constraint_schema and c.constraint_name = kcu.constraint_name
+"       \        inner join information_schema.referential_constraints rc
+"       \          on c.constraint_schema = rc.constraint_schema and c.constraint_name = rc.constraint_name
+"       \        inner join information_schema.table_constraints c2
+"       \          on rc.unique_constraint_schema = c2.constraint_schema and rc.unique_constraint_name = c2.constraint_name
+"       \        inner join information_schema.key_column_usage kcu2
+"       \          on c2.constraint_schema = kcu2.constraint_schema and c2.constraint_name = kcu2.constraint_name and kcu.ordinal_position = kcu2.ordinal_position
+"       \ where  c.constraint_type = 'FOREIGN KEY'
+"       \ and kcu.column_name = '{col_name}'
+"       \ "
 
 let s:sqlserver = {
       \   'args': ['-h-1', '-W', '-s', '|', '-Q','\s\s\+','\t'],
@@ -81,10 +106,11 @@ let s:sqlserver = {
       \   'select_foreign_key_query': 'select * from %s.%s where %s = %s',
       \   'cell_line_number': 2,
       \   'cell_line_pattern': '^-\+.-\+',
-      \   'parse_results': {results, min_len -> s:results_parser(results[0:-3], '|', min_len)},
+      \   'parse_results': {results, min_len -> s:sqlserver_results_parser(results, min_len)},
       \   'quote': 0,
       \   'default_scheme': 'dbo',
       \ }
+
 
 let s:mysql_foreign_key_query =  "
       \ SELECT referenced_table_name, referenced_column_name, referenced_table_schema
