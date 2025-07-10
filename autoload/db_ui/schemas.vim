@@ -17,6 +17,21 @@ function! s:results_parser(results, delimiter, min_len) abort
   return filter(mapped,'len(v:val) ==? '.min_len)
 endfunction
 
+function! s:sqlserver_results_parser(results, delimiter, min_len) abort
+  if a:min_len ==? 1
+    return filter(map(a:results, 'substitute(v:val, "\\s\\+$", "", "")'), '!empty(trim(v:val))')
+  endif
+  let mapped = map(a:results, {_,row -> map(filter(split(row, a:delimiter), '!empty(trim(v:val))'), 'substitute(v:val, "\\s\\+$", "", "")')})
+  if a:min_len > 1
+    return filter(mapped, 'len(v:val) ==? '.a:min_len)
+  endif
+
+  let counts = map(copy(mapped), 'len(v:val)')
+  let min_len = max(counts)
+
+  return filter(mapped,'len(v:val) ==? '.min_len)
+endfunction
+
 let s:postgres_foreign_key_query = "
       \ SELECT ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name, ccu.table_schema as foreign_table_schema
       \ FROM
@@ -81,7 +96,7 @@ let s:sqlserver = {
       \   'select_foreign_key_query': 'select * from %s.%s where %s = %s',
       \   'cell_line_number': 2,
       \   'cell_line_pattern': '^-\+.-\+',
-      \   'parse_results': {results, min_len -> s:results_parser(results[0:-3], '|', min_len)},
+      \   'parse_results': {results, min_len -> s:sqlserver_results_parser(results[0:-3], '|', min_len)},
       \   'quote': 0,
       \   'default_scheme': 'dbo',
       \ }
