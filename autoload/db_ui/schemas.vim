@@ -81,7 +81,7 @@ let s:sqlserver = {
       \   'select_foreign_key_query': 'select * from %s.%s where %s = %s',
       \   'cell_line_number': 2,
       \   'cell_line_pattern': '^-\+.-\+',
-      \   'parse_results': {results, min_len -> s:results_parser(results[0:-3], '|', min_len)},
+      \   'parse_results': {results, min_len -> s:results_parser(results[0:-3], '\t', min_len)},
       \   'quote': 0,
       \   'default_scheme': 'dbo',
       \ }
