@@ -417,11 +417,14 @@ function M.get_conn_info(db_key_name)
     conn = db.conn,
     url = db.url,
     table = vim.b.dbui_table_name or '',
-    scheme = vim.b.dbui_schema_name or '',  -- vim-dadbod-completion expects "scheme" not "schema"
-    db_name = db.name,
+    scheme = vim.b.dbui_schema_name or db.default_scheme or '',  -- vim-dadbod-completion expects "scheme" not "schema"
+    db_name = db.db_name or db.name,
     filetype = db.filetype,
     connected = db.conn ~= '' and 1 or 0,  -- vim-dadbod-completion expects this
-    db = db.conn  -- vim-dadbod-completion expects this too
+    db = db.conn,  -- vim-dadbod-completion expects this too
+    schema_support = db.schema_support or false,
+    tables = db.tables and db.tables.list or {},  -- Provide table list for completion
+    schemas = db.schemas and db.schemas.list or {}  -- Provide schema list for completion
   }
 end
 

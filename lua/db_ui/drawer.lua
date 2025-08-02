@@ -230,14 +230,16 @@ function Drawer:render_help()
   end
 end
 
-function Drawer:add(label, action, type, icon, file_path, level)
+function Drawer:add(label, action, type, icon, file_path, level, table_name, schema_name)
   local item = {
     label = string.rep('  ', level) .. icon .. ' ' .. label,
     action = action,
     type = type,
     file_path = file_path,
     level = level,
-    dbui_db_key_name = self.current_db_key_name or ''
+    dbui_db_key_name = self.current_db_key_name or '',
+    table = table_name or '',
+    schema = schema_name or ''
   }
   table.insert(self.content, item)
 end
@@ -314,9 +316,9 @@ function Drawer:add_db_tables(db, level)
       self:add(table, 'toggle', 'table', table_icon, '', level + 1)
       
       if db.tables.items[table].expanded then
-        -- Add table helpers
+        -- Add table helpers with table context
         for helper_name, _ in pairs(config.table_helpers) do
-          self:add(helper_name, 'open', 'table_helper', '', '', level + 2)
+          self:add(helper_name, 'open', 'table_helper', '', '', level + 2, table, '')
         end
       end
     end

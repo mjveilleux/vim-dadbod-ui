@@ -32,14 +32,25 @@ function! db_ui#setup_completion() abort
     return
   endif
   
-  " If vim-dadbod-completion is available, it will set up completion automatically
-  " We just need to ensure our buffer variables are set correctly
-  
   " Ensure buffer variables are properly set for vim-dadbod-completion
   if !exists('b:dbui_db_key_name') && exists('b:db')
     " Try to find the db_key_name from the connection
     " This is a fallback if it wasn't set properly
     let b:dbui_db_key_name = get(b:, 'dbui_db_key_name', '')
+  endif
+  
+  " Get database info for better completion context
+  if exists('b:dbui_db_key_name') && !empty(b:dbui_db_key_name)
+    let l:db_info = db_ui#get_conn_info(b:dbui_db_key_name)
+    
+    " Set additional buffer variables for completion context
+    if has_key(l:db_info, 'db_name') && !empty(l:db_info.db_name)
+      let b:dbui_db_name = l:db_info.db_name
+    endif
+    
+    if has_key(l:db_info, 'schema_support')
+      let b:dbui_schema_support = l:db_info.schema_support
+    endif
   endif
 endfunction
 
