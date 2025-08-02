@@ -1,6 +1,7 @@
 local config = require('db_ui.config')
 local utils = require('db_ui.utils')
 local notifications = require('db_ui.notifications')
+local csv_query = require('db_ui.csv_query')
 
 local M = {}
 
@@ -305,6 +306,20 @@ function Query:remove_buffer(bufnr)
   return self.drawer:render()
 end
 
+-- Try CSV execution for SQL Server
+function Query:try_csv_execution(db, lines)
+  if not db or not db.url then
+    return false
+  end
+  
+  if not csv_query.is_sql_server(db.url) then
+    return false
+  end
+  
+  local query = table.concat(lines, '\n')
+  return csv_query.execute_csv_query(db.url, query)
+end
+
 function Query:execute_query(is_visual_mode)
   is_visual_mode = is_visual_mode or false
   local lines = self:get_lines(is_visual_mode)
@@ -314,11 +329,23 @@ function Query:execute_query(is_visual_mode)
   
   local bind_param_pattern = '(^|[[:blank:]]|[^:])(' .. config.bind_param_pattern .. ')'
   
+  -- Get database connection for CSV check
+  local db = self.drawer.dbui.dbs[vim.b.dbui_db_key_name]
+  
+  -- Try CSV execution for SQL Server first
+  if db and self:try_csv_execution(db, lines) then
+    local elapsed = (vim.loop.hrtime() - query_info.last_query_start_time) / 1e9
+    query_info.last_query_time = elapsed
+    notifications.info(string.format('Query executed in %.2f seconds', elapsed))
+    self.last_query = lines
+    return
+  end
+  
+  -- Fall back to normal vim-dadbod execution
   if not is_visual_mode and vim.fn.search(bind_param_pattern, 'n') <= 0 then
     utils.print_debug({ message = 'Executing whole buffer', command = '%DB' })
     vim.cmd('silent! %DB')
   else
-    local db = self.drawer.dbui.dbs[vim.b.dbui_db_key_name]
     self:execute_lines(db, lines, is_visual_mode)
   end
   
@@ -354,6 +381,12 @@ function Query:execute_lines(db, lines, is_visual_mode)
     processed_lines = result
   end
   
+  -- Try CSV execution for SQL Server first
+  if self:try_csv_execution(db, processed_lines) then
+    return processed_lines
+  end
+  
+  -- Fall back to normal vim-dadbod execution
   if #processed_lines == 1 then
     utils.print_debug({
       message = 'Executing single line',

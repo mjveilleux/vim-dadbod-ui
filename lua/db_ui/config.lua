@@ -32,7 +32,8 @@ local defaults = {
   hide_schemas = {},
   bind_param_pattern = [[\w\+]],
   is_oracle_legacy = false,
-  icons = {}
+  icons = {},
+  use_csv_mode = true
 }
 
 -- Initialize configuration
