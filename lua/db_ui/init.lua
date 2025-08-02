@@ -220,7 +220,7 @@ function DBUI:generate_new_db_entry(db)
     source = db.source,
     scheme = "",
     table_helpers = {},
-    expanded = false,
+    expanded = true,
     tables = { expanded = false, items = {}, list = {} },
     schemas = { expanded = false, items = {}, list = {} },
     saved_queries = { expanded = false, list = {} },

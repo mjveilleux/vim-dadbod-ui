@@ -297,20 +297,17 @@ function Drawer:add_db_buffers(db, level)
 end
 
 function Drawer:add_db_saved_queries(db, level)
-  if #db.saved_queries.list == 0 then
-    return
-  end
-  
   local icon = db.saved_queries.expanded and config.icons.expanded.saved_queries or config.icons.collapsed.saved_queries
   self:add('Saved Queries', 'toggle', 'saved_queries', icon, '', level)
   
   if db.saved_queries.expanded then
+    -- Add existing saved queries
     for _, query in ipairs(db.saved_queries.list) do
       local filename = vim.fn.fnamemodify(query, ':t')
       self:add(filename, 'open', 'saved_query', config.icons.saved_query, query, level + 1)
     end
     
-    -- Add new query option
+    -- Always add new query option
     self:add('New Query', 'open', 'new_query', config.icons.new_query, '', level + 1)
   end
 end

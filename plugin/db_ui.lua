@@ -205,4 +205,7 @@ if not config.disable_mappings and not config.disable_mappings_sql then
 end
 
 -- Setup with any existing configuration
-config.setup() 
+config.setup()
+
+-- Export icons to global variable for syntax highlighting
+vim.g.db_ui_icons = config.icons 
