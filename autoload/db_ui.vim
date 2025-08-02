@@ -14,7 +14,7 @@ function! db_ui#get_conn_info(db_key_name) abort
     return {
       \ 'conn': get(b:, 'db', ''),
       \ 'table': get(b:, 'dbui_table_name', ''),
-      \ 'schema': get(b:, 'dbui_schema_name', '')
+      \ 'scheme': get(b:, 'dbui_schema_name', '')
     \ }
   endif
   
@@ -40,7 +40,4 @@ function! db_ui#setup_completion() abort
   endif
 endfunction
 
-" Legacy compatibility functions
-function! db_ui#dbui#get_conn_info(...) abort
-  return call('db_ui#get_conn_info', a:000)
-endfunction
+" Note: No legacy compatibility functions needed - use db_ui#get_conn_info directly

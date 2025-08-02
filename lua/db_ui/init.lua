@@ -417,7 +417,7 @@ function M.get_conn_info(db_key_name)
     conn = db.conn,
     url = db.url,
     table = vim.b.dbui_table_name or '',
-    schema = vim.b.dbui_schema_name or '',
+    scheme = vim.b.dbui_schema_name or '',  -- vim-dadbod-completion expects "scheme" not "schema"
     db_name = db.name,
     filetype = db.filetype
   }
