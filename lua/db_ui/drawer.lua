@@ -1,6 +1,7 @@
 local config = require('db_ui.config')
 local utils = require('db_ui.utils')
 local notifications = require('db_ui.notifications')
+local syntax = require('db_ui.syntax')
 
 local M = {}
 
@@ -40,21 +41,9 @@ function Drawer:open(mods)
     vim.cmd('vertical ' .. win_pos .. ' resize ' .. config.winwidth)
   end
   
-  -- Set buffer options
+  -- Set buffer options and syntax
   vim.bo.filetype = 'dbui'
-  vim.bo.buftype = 'nofile'
-  vim.bo.bufhidden = 'wipe'
-  vim.bo.buflisted = false
-  vim.bo.swapfile = false
-  vim.bo.modifiable = false
-  
-  -- Set window options
-  vim.wo.wrap = false
-  vim.wo.spell = false
-  vim.wo.number = false
-  vim.wo.relativenumber = false
-  vim.wo.signcolumn = 'no'
-  vim.wo.winfixwidth = true
+  syntax.setup_buffer()
   
   self:render()
   self:setup_mappings()
@@ -78,6 +67,7 @@ function Drawer:setup_mappings()
     vim.keymap.set('n', 'H', '<Plug>(DBUI_ToggleDetails)', opts)
     vim.keymap.set('n', 'r', '<Plug>(DBUI_RenameLine)', opts)
     vim.keymap.set('n', 'q', '<Plug>(DBUI_Quit)', opts)
+    vim.keymap.set('n', '?', function() self:toggle_help() end, opts)
     vim.keymap.set('n', '<c-k>', '<Plug>(DBUI_GotoFirstSibling)', opts)
     vim.keymap.set('n', '<c-j>', '<Plug>(DBUI_GotoLastSibling)', opts)
     vim.keymap.set('n', '<C-p>', '<Plug>(DBUI_GotoParentNode)', opts)

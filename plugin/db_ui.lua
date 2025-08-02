@@ -214,4 +214,4 @@ vim.g.db_ui_icons = config.icons
 -- Note: vim-dadbod-completion reads buffer variables directly, no autoload needed
 _G.db_ui_get_conn_info = function(db_key_name)
   return require('db_ui').get_conn_info(db_key_name)
-end 
+end
