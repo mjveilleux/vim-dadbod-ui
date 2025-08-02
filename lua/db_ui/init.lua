@@ -390,4 +390,15 @@ function M.goto_child()
   return instance.drawer:goto_child()
 end
 
+-- Check if a buffer is in the tmp location
+function DBUI:is_tmp_location_buffer(db, buffer_name)
+  if self.tmp_location == "" then
+    return false
+  end
+  
+  -- Check if buffer path starts with tmp_location
+  local buffer_dir = vim.fn.fnamemodify(buffer_name, ':h')
+  return string.find(buffer_dir, self.tmp_location, 1, true) == 1
+end
+
 return M 

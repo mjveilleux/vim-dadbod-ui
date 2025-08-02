@@ -90,11 +90,19 @@ function Query:generate_buffer_name(db, opts)
   end
   
   if self.drawer.dbui.tmp_location ~= '' then
-    return string.format('%s/%s', self.drawer.dbui.tmp_location, buffer_name)
+    local full_path = string.format('%s/%s-%s.sql', self.drawer.dbui.tmp_location, time, buffer_name)
+    -- Ensure the directory exists
+    local dir = vim.fn.fnamemodify(full_path, ':h')
+    if vim.fn.isdirectory(dir) == 0 then
+      vim.fn.mkdir(dir, 'p')
+    end
+    return full_path
   end
   
-  local tmp_name = string.format('%s/%s', vim.fn.fnamemodify(vim.fn.tempname(), ':p:h'), buffer_name)
-  table.insert(db.buffers.tmp, tmp_name)
+  local tmp_name = string.format('%s/%s-%s.sql', vim.fn.fnamemodify(vim.fn.tempname(), ':p:h'), time, buffer_name)
+  if db.buffers.tmp then
+    table.insert(db.buffers.tmp, tmp_name)
+  end
   return tmp_name
 end
 
@@ -157,7 +165,18 @@ function Query:open_buffer(db, buffer_name, edit_action, opts)
   end
   
   edit_action = edit_action or 'edit'
-  vim.cmd(edit_action .. ' ' .. buffer_name)
+  
+  -- Focus the query window first
+  self:focus_window()
+  
+  -- Ensure we have the right split command
+  if edit_action == 'vsplit' then
+    vim.cmd(self.drawer:get_split_command())
+    vim.cmd('edit ' .. buffer_name)
+  else
+    vim.cmd(edit_action .. ' ' .. buffer_name)
+  end
+  
   self:setup_buffer(db, opts, buffer_name, was_single_win)
   
   if table == '' then
