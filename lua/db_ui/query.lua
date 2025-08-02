@@ -252,6 +252,11 @@ function Query:setup_buffer(db, opts, buffer_name, was_single_win)
     vim.wo.spell = false
     vim.bo.modifiable = true
     vim.bo.filetype = db.filetype
+    
+    -- Set up completion after filetype is set
+    vim.schedule(function()
+      vim.cmd('call vim_dadbod_ui#setup_completion()')
+    end)
   end
   
   local is_sql = vim.bo.filetype == db.filetype
@@ -262,8 +267,25 @@ function Query:setup_buffer(db, opts, buffer_name, was_single_win)
   vim.keymap.set('n', '<Plug>(DBUI_ExecuteQuery)', function() self:execute_query() end, opts_map)
   vim.keymap.set('v', '<Plug>(DBUI_ExecuteQuery)', function() self:execute_query(true) end, opts_map)
   
+  -- Add completion mappings for SQL buffers
+  if vim.bo.filetype == 'sql' then
+    vim.keymap.set('i', '<C-x><C-o>', '<C-x><C-o>', opts_map) -- Omni completion
+    vim.keymap.set('i', '<C-Space>', '<C-x><C-o>', opts_map) -- Alternative completion trigger
+  end
+  
   if is_tmp and is_sql then
     vim.keymap.set('n', '<Plug>(DBUI_SaveQuery)', function() self:save_query() end, opts_map)
+  end
+  
+  -- Set up standard SQL mappings if not disabled
+  if not config.disable_mappings and not config.disable_mappings_sql and is_sql then
+    vim.keymap.set('n', '<Leader>S', '<Plug>(DBUI_ExecuteQuery)', opts_map)
+    vim.keymap.set('v', '<Leader>S', '<Plug>(DBUI_ExecuteQuery)', opts_map)
+    vim.keymap.set('n', '<Leader>E', '<Plug>(DBUI_EditBindParameters)', opts_map)
+    
+    if is_tmp then
+      vim.keymap.set('n', '<Leader>W', '<Plug>(DBUI_SaveQuery)', opts_map)
+    end
   end
   
   -- Set up autocommands

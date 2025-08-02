@@ -415,8 +415,11 @@ function M.get_conn_info(db_key_name)
   local db = instance.dbs[db_key_name]
   return {
     conn = db.conn,
+    url = db.url,
     table = vim.b.dbui_table_name or '',
-    schema = vim.b.dbui_schema_name or ''
+    schema = vim.b.dbui_schema_name or '',
+    db_name = db.name,
+    filetype = db.filetype
   }
 end
 
