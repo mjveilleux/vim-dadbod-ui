@@ -11,10 +11,13 @@ function! db_ui#get_conn_info(db_key_name) abort
   
   " Fallback for regular Vim
   if exists('b:dbui_db_key_name')
+    let conn = get(b:, 'db', '')
     return {
-      \ 'conn': get(b:, 'db', ''),
+      \ 'conn': conn,
       \ 'table': get(b:, 'dbui_table_name', ''),
-      \ 'scheme': get(b:, 'dbui_schema_name', '')
+      \ 'scheme': get(b:, 'dbui_schema_name', ''),
+      \ 'connected': !empty(conn) ? 1 : 0,
+      \ 'db': conn
     \ }
   endif
   
