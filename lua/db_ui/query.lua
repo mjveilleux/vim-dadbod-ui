@@ -156,6 +156,7 @@ function Query:open_buffer(db, buffer_name, edit_action, opts)
     end
   end
   
+  edit_action = edit_action or 'edit'
   vim.cmd(edit_action .. ' ' .. buffer_name)
   self:setup_buffer(db, opts, buffer_name, was_single_win)
   

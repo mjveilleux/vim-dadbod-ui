@@ -301,14 +301,14 @@ function Drawer:add_db_saved_queries(db, level)
   self:add('Saved Queries', 'toggle', 'saved_queries', icon, '', level)
   
   if db.saved_queries.expanded then
+    -- Always add new query option first
+    self:add('New Query', 'open', 'new_query', config.icons.new_query, '', level + 1)
+    
     -- Add existing saved queries
     for _, query in ipairs(db.saved_queries.list) do
       local filename = vim.fn.fnamemodify(query, ':t')
       self:add(filename, 'open', 'saved_query', config.icons.saved_query, query, level + 1)
     end
-    
-    -- Always add new query option
-    self:add('New Query', 'open', 'new_query', config.icons.new_query, '', level + 1)
   end
 end
 
