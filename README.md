@@ -1,315 +1,415 @@
-# vim-dadbod-ui
+# vim-dadbod-ui Lua Rewrite
 
+A complete Lua rewrite of the popular vim-dadbod-ui plugin for Neovim. This version provides all the functionality of the original Vimscript version with improved performance, better integration with modern Neovim features, and enhanced extensibility.
 
-Simple UI for [vim-dadbod](https://github.com/tpope/vim-dadbod).
-It allows simple navigation through databases and allows saving queries for later use.
+## Features
 
-![screenshot](https://i.imgur.com/fhGqC9U.png)
-
-
-With nerd fonts:
-![with-nerd-fonts](https://i.imgur.com/aXI5BTG.png)
-
-
-Video presentation by TJ:
-
-[![Video presentation by TJ](https://i.ytimg.com/vi/ALGBuFLzDSA/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDmOFtUnDmQx5U_PKBqV819YujOBw)](https://www.youtube.com/watch?v=ALGBuFLzDSA)
-
-Tested on Linux, Mac and Windows, Vim 8.1+ and Neovim.
-
-Features:
-* Navigate through multiple databases and it's tables and schemas
-* Several ways to define your connections
-* Save queries on single location for later use
-* Define custom table helpers
-* Bind parameters (see `:help vim-dadbod-ui-bind-parameters`)
-* Autocompletion with [vim-dadbod-completion](https://github.com/kristijanhusak/vim-dadbod-completion)
-* Jump to foreign keys from the dadbod output (see `:help <Plug>(DBUI_JumpToForeignKey)`)
-* Support for nerd fonts (see `:help g:db_ui_use_nerd_fonts`)
-* Async query execution
+- 🔥 **Complete Lua rewrite** - Native Neovim Lua implementation
+- 🚀 **Improved Performance** - Faster startup and query execution  
+- 🎨 **Modern UI** - Better integration with Neovim's UI capabilities
+- 🔧 **Enhanced Configuration** - More flexible and extensible configuration system
+- 📱 **nvim-notify Integration** - Beautiful notifications with nvim-notify support
+- 🌙 **Lazy Loading** - Optimized startup with lazy loading
+- 🔒 **Type Safety** - Better error handling and validation
+- 🎯 **Backwards Compatible** - Easy migration from Vimscript version
 
 ## Installation
 
-Configuration with [lazy.nvim](https://github.com/folke/lazy.nvim)
+### lazy.nvim
+
 ```lua
-return {
-  'kristijanhusak/vim-dadbod-ui',
+{
+  'your-username/vim-dadbod-ui-lua',
   dependencies = {
     { 'tpope/vim-dadbod', lazy = true },
-    { 'kristijanhusak/vim-dadbod-completion', ft = { 'sql', 'mysql', 'plsql' }, lazy = true }, -- Optional
+    { 'kristijanhusak/vim-dadbod-completion', ft = { 'sql', 'mysql', 'plsql' }, lazy = true },
   },
   cmd = {
     'DBUI',
-    'DBUIToggle',
+    'DBUIToggle', 
     'DBUIAddConnection',
     'DBUIFindBuffer',
   },
-  init = function()
-    -- Your DBUI configuration
-    vim.g.db_ui_use_nerd_fonts = 1
+  config = function()
+    require('db_ui').setup({
+      use_nerd_fonts = true,
+      use_nvim_notify = true,
+      save_location = '~/.local/share/db_ui',
+      -- Add your configuration here
+    })
   end,
 }
 ```
 
-Or [vim-plug](https://github.com/junegunn/vim-plug)
-```vim
-Plug 'tpope/vim-dadbod'
-Plug 'kristijanhusak/vim-dadbod-ui'
-Plug 'kristijanhusak/vim-dadbod-completion' "Optional
-```
-
-After installation, run `:DBUI`, which should open up a drawer with all databases provided.
-When you finish writing your query, just write the file (`:w`) and it will automatically execute the query for that database.
-
-## Databases
-There are 3 ways to provide database connections to UI:
-
-1. [Through environment variables](#through-environment-variables)
-2. [Via g:dbs global variable](#via-gdbs-global-variable)
-3. [Via :DBUIAddConnection command](#via-dbuiaddconnection-command)
-
-#### Through environment variables
-If `$DBUI_URL` env variable exists, it will be added as a connection. Name for the connection will be parsed from the url.
-If you want to use a custom name, pass `$DBUI_NAME` alongside the url.
-Env variables that will be read can be customized like this:
-
-```vimL
-let g:db_ui_env_variable_url = 'DATABASE_URL'
-let g:db_ui_env_variable_name = 'DATABASE_NAME'
-```
-
-Optionally you can leverage [dotenv.vim](https://github.com/tpope/vim-dotenv)
-to specific any number of connections in an `.env` file by using a specific
-prefix (defaults to `DB_UI_`). The latter part of the env variable becomes the
-name of the connection (lowercased)
-
-```bash
-# .env
-DB_UI_DEV=...          # becomes the `dev` connection
-DB_UI_PRODUCTION=...   # becomes the `production` connection
-```
-
-The prefix can be customized like this:
-
-```vimL
-let g:db_ui_dotenv_variable_prefix = 'MYPREFIX_'
-```
-
-#### Via g:dbs global variable
-Provide list with all databases that you want to use through `g:dbs` variable as an array of objects or an object:
-
-```vimL
-function s:resolve_production_url()
-  let url = system('get-prod-url')
-  return url
-end
-
-let g:dbs = {
-\ 'dev': 'postgres://postgres:mypassword@localhost:5432/my-dev-db',
-\ 'staging': 'postgres://postgres:mypassword@localhost:5432/my-staging-db',
-\ 'wp': 'mysql://root@localhost/wp_awesome',
-\ 'production': function('s:resolve_production_url')
-\ }
-```
-
-Or if you want them to be sorted in the order you define them, this way is also available:
-
-```vimL
-function s:resolve_production_url()
-  let url = system('get-prod-url')
-  return url
-end
-
-let g:dbs = [
-\ { 'name': 'dev', 'url': 'postgres://postgres:mypassword@localhost:5432/my-dev-db' }
-\ { 'name': 'staging', 'url': 'postgres://postgres:mypassword@localhost:5432/my-staging-db' },
-\ { 'name': 'wp', 'url': 'mysql://root@localhost/wp_awesome' },
-\ { 'name': 'production', 'url': function('s:resolve_production_url') },
-\ ]
-```
-
-In case you use Neovim, here's an example with Lua:
+### packer.nvim
 
 ```lua
-vim.g.dbs = {
-    { name = 'dev', url = 'postgres://postgres:mypassword@localhost:5432/my-dev-db' },
-    { name = 'staging', url = 'postgres://postgres:mypassword@localhost:5432/my-staging-db' },
-    { name = 'wp', url = 'mysql://root@localhost/wp_awesome' },
-    {
-      name = 'production',
-      url = function()
-        return vim.fn.system('get-prod-url')
-      end
-    },
+use {
+  'your-username/vim-dadbod-ui-lua',
+  requires = {
+    'tpope/vim-dadbod',
+    'kristijanhusak/vim-dadbod-completion', -- Optional
+  },
+  config = function()
+    require('db_ui').setup({
+      use_nerd_fonts = true,
+      use_nvim_notify = true,
+    })
+  end
 }
 ```
 
+## Configuration
 
-Just make sure to **NOT COMMIT** these. I suggest using project local vim config (`:help exrc`)
+The Lua version provides a modern configuration system that supports both the new Lua configuration format and backwards compatibility with existing Vimscript global variables.
 
-#### Via :DBUIAddConnection command
+### Basic Setup
 
-Using `:DBUIAddConnection` command or pressing `A` in dbui drawer opens up a prompt to enter database url and name,
-that will be saved in `g:db_ui_save_location` connections file. These connections are available from everywhere.
-
-#### Connection related notes
-It is possible to have two connections with same name, but from different source.
-for example, you can have `my-db` in env variable, in `g:dbs` and in saved connections.
-To view from which source the database is, press `H` in drawer.
-If there are duplicate connection names from same source, warning will be shown and first one added will be preserved.
-
-## Settings
-
-An overview of all settings and their default values can be found at `:help vim-dadbod-ui`.
-
-### Table helpers
-Table helper is a predefined query that is available for each table in the list.
-Currently, default helper that each scheme has for it's tables is `List`, which for most schemes defaults to `g:db_ui_default_query`.
-Postgres, Mysql and Sqlite has some additional helpers defined, like "Indexes", "Foreign Keys", "Primary Keys".
-
-Predefined query can inject current db name and table name via `{table}` and `{dbname}`.
-
-To add your own for a specific scheme, provide it through .`g:db_ui_table_helpers`.
-
-For example, to add a "count rows" helper for postgres, you would add this as a config:
-
-```vimL
-let g:db_ui_table_helpers = {
-\   'postgresql': {
-\     'Count': 'select count(*) from "{table}"'
-\   }
-\ }
+```lua
+require('db_ui').setup({
+  -- UI Configuration
+  use_nerd_fonts = true,
+  use_nvim_notify = true,
+  winwidth = 40,
+  win_position = 'left', -- 'left' or 'right'
+  
+  -- Database Configuration
+  save_location = '~/.local/share/db_ui',
+  tmp_query_location = '',
+  default_query = 'SELECT * from "{table}" LIMIT 200;',
+  
+  -- Execution Configuration
+  execute_on_save = true,
+  auto_execute_table_helpers = false,
+  
+  -- Notification Configuration
+  notification_width = 40,
+  disable_info_notifications = false,
+  force_echo_notifications = false,
+  
+  -- Environment Configuration
+  dotenv_variable_prefix = 'DB_UI_',
+  env_variable_url = 'DBUI_URL',
+  env_variable_name = 'DBUI_NAME',
+  
+  -- Mapping Configuration
+  disable_mappings = false,
+  disable_mappings_dbui = false,
+  disable_mappings_dbout = false,
+  disable_mappings_sql = false,
+  
+  -- Advanced Configuration
+  table_helpers = {},
+  hide_schemas = {},
+  bind_param_pattern = [[\w\+]],
+  debug = false,
+  
+  -- Custom Functions
+  buffer_name_generator = nil, -- function(opts) -> string
+  table_name_sorter = nil,     -- function(tables) -> sorted_tables
+  
+  -- Icons Configuration
+  icons = {
+    expanded = '▾',
+    collapsed = '▸',
+    saved_query = '*',
+    new_query = '+',
+    tables = '~',
+    buffers = '»',
+    add_connection = '[+]',
+    connection_ok = '✓',
+    connection_error = '✕',
+  }
+})
 ```
 
-Or if you want to override any of the defaults, provide the same name as part of config:
-```vimL
-let g:db_ui_table_helpers = {
-\   'postgresql': {
-\     'List': 'select * from "{table}" order by id asc'
-\   }
-\ }
+### Database Connections
+
+The plugin supports multiple ways to define database connections:
+
+#### 1. Global Variables (Backwards Compatible)
+
+```lua
+-- Single connection
+vim.g.db = 'postgresql://user:password@localhost/mydb'
+
+-- Multiple connections (dictionary format)
+vim.g.dbs = {
+  dev = 'postgresql://user:password@localhost/dev_db',
+  staging = 'mysql://user:password@staging-host/staging_db',
+  prod = 'postgresql://user:password@prod-host/prod_db',
+}
+
+-- Multiple connections (array format)
+vim.g.dbs = {
+  { name = 'dev', url = 'postgresql://user:password@localhost/dev_db' },
+  { name = 'staging', url = 'mysql://user:password@staging-host/staging_db' },
+}
 ```
 
-### Auto execute query
-If this is set to `1`, opening any of the table helpers will also automatically execute the query.
+#### 2. Environment Variables
 
-Default value is: `0`
+```bash
+export DBUI_URL="postgresql://user:password@localhost/mydb"
+export DBUI_NAME="my_database"
 
-To enable it, add this to vimrc:
-
-```vimL
-let g:db_ui_auto_execute_table_helpers = 1
+# Or with custom prefix
+export DB_UI_DEV="postgresql://user:password@localhost/dev_db"
+export DB_UI_PROD="postgresql://user:password@prod-host/prod_db"
 ```
 
-### Icons
-These are the default icons used:
+#### 3. Dotenv Integration
 
-```vimL
-let g:db_ui_icons = {
-    \ 'expanded': '▾',
-    \ 'collapsed': '▸',
-    \ 'saved_query': '*',
-    \ 'new_query': '+',
-    \ 'tables': '~',
-    \ 'buffers': '»',
-    \ 'connection_ok': '✓',
-    \ 'connection_error': '✕',
-    \ }
+Create a `.env` file in your project:
+
+```bash
+DB_UI_DEV=postgresql://user:password@localhost/dev_db
+DB_UI_STAGING=mysql://user:password@staging-host/staging_db
+DB_UI_PROD=postgresql://user:password@prod-host/prod_db
 ```
 
-You can override any of these:
-```vimL
-let g:db_ui_icons = {
-    \ 'expanded': '+',
-    \ 'collapsed': '-',
-    \ }
+#### 4. Interactive Connection Management
+
+```lua
+-- Add connection via command
+:DBUIAddConnection
+
+-- Or programmatically
+require('db_ui').add_connection()
+
+-- Import/Export connections
+require('db_ui').import_connections('path/to/connections.json')
+require('db_ui').export_connections('path/to/backup.json')
 ```
 
-### Help text
-To hide `Press ? for help` add this to vimrc:
+## Usage
 
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `:DBUI` | Open the database drawer |
+| `:DBUIToggle` | Toggle the database drawer |
+| `:DBUIClose` | Close the database drawer |
+| `:DBUIAddConnection` | Add a new database connection |
+| `:DBUIFindBuffer` | Find current buffer in DBUI |
+
+### Key Mappings
+
+#### DBUI Drawer Mappings
+
+| Key | Action |
+|-----|--------|
+| `o`, `<CR>`, `<2-LeftMouse>` | Open/Toggle item |
+| `S` | Open in vertical split |
+| `d` | Delete connection/query |
+| `R` | Redraw/Refresh |
+| `A` | Add new connection |
+| `H` | Toggle details |
+| `r` | Rename |
+| `q` | Close drawer |
+| `?` | Toggle help |
+
+#### Navigation Mappings
+
+| Key | Action |
+|-----|--------|
+| `<C-j>` | Go to last sibling |
+| `<C-k>` | Go to first sibling |
+| `J` | Go to next sibling |
+| `K` | Go to previous sibling |
+| `<C-n>` | Go to child node |
+| `<C-p>` | Go to parent node |
+
+#### SQL Buffer Mappings
+
+| Key | Action |
+|-----|--------|
+| `<Leader>S` | Execute query |
+| `<Leader>W` | Save query |
+| `<Leader>E` | Edit bind parameters |
+
+### Programmatic API
+
+```lua
+local db_ui = require('db_ui')
+
+-- Core functions
+db_ui.open()           -- Open drawer
+db_ui.toggle()         -- Toggle drawer
+db_ui.close()          -- Close drawer
+db_ui.find_buffer()    -- Find buffer in DBUI
+
+-- Connection management
+db_ui.add_connection()
+db_ui.export_connections('backup.json')
+db_ui.import_connections('restore.json')
+db_ui.connections_list()
+
+-- State management
+db_ui.reset_state()    -- Reset all state
 ```
-let g:db_ui_show_help = 0
+
+## Migration from Vimscript Version
+
+The Lua version is designed to be mostly backwards compatible. Here's how to migrate:
+
+### 1. Installation
+
+Replace your existing vim-dadbod-ui installation with the Lua version in your plugin manager.
+
+### 2. Configuration Migration
+
+Your existing global variables will continue to work, but you can optionally migrate to the new Lua configuration:
+
+**Before (Vimscript):**
+```vim
+let g:db_ui_use_nerd_fonts = 1
+let g:db_ui_winwidth = 40
+let g:db_ui_save_location = '~/.local/share/db_ui'
 ```
 
-Pressing `?` will show/hide help no matter if this option is set or not.
-
-### Drawer width
-
-What should be the drawer width when opened. Default is `40`.
-
-```vimL
-let g:db_ui_winwidth = 30
+**After (Lua):**
+```lua
+require('db_ui').setup({
+  use_nerd_fonts = true,
+  winwidth = 40,
+  save_location = '~/.local/share/db_ui',
+})
 ```
 
-### Default query
+### 3. Custom Functions
 
-**DEPRECATED**: Use [Table helpers](#table-helpers) instead.
+If you have custom functions, convert them to Lua:
 
-When opening up a table, buffer will be prepopulated with some basic select, which defaults to:
+**Before:**
+```vim
+function! MyCustomBufferNameGenerator(opts)
+  return a:opts.table . '-custom'
+endfunction
+let g:Db_ui_buffer_name_generator = function('MyCustomBufferNameGenerator')
+```
+
+**After:**
+```lua
+require('db_ui').setup({
+  buffer_name_generator = function(opts)
+    return opts.table .. '-custom'
+  end
+})
+```
+
+## Advanced Features
+
+### Custom Table Helpers
+
+```lua
+require('db_ui').setup({
+  table_helpers = {
+    postgresql = {
+      List = 'SELECT * FROM {table} LIMIT 200',
+      Count = 'SELECT COUNT(*) FROM {table}',
+      Describe = '\\d+ {table}',
+      Indexes = 'SELECT * FROM pg_indexes WHERE tablename = \'{table}\'',
+    },
+    mysql = {
+      List = 'SELECT * FROM {table} LIMIT 200',
+      Describe = 'DESCRIBE {table}',
+    }
+  }
+})
+```
+
+### Custom Icons
+
+```lua
+require('db_ui').setup({
+  icons = {
+    expanded = {
+      db = '📊 ',
+      table = '📋 ',
+      schema = '📁 ',
+    },
+    collapsed = {
+      db = '📊▶',
+      table = '📋▶',
+      schema = '📁▶',
+    },
+    saved_query = '💾',
+    new_query = '✨',
+  }
+})
+```
+
+### Bind Parameters
+
+The plugin supports bind parameters in your queries:
+
 ```sql
-select * from table LIMIT 200;
-```
-To change the default value, use `g:db_ui_default_query`, where `{table}` is placeholder for table name.
-
-```vimL
-let g:db_ui_default_query = 'select * from "{table}" limit 10'
+SELECT * FROM users WHERE age > :min_age AND city = :city;
 ```
 
-### Save location
-All queries are by default written to tmp folder.
-There's a mapping to save them permanently for later to the specific location.
+When executed, you'll be prompted to enter values for `:min_age` and `:city`.
 
-That location is by default `~/.local/share/db_ui`. To change it, addd `g:db_ui_save_location` to your vimrc.
-```vimL
-let g:db_ui_save_location = '~/Dropbox/db_ui_queries'
+### Integration with nvim-notify
+
+Beautiful notifications with progress indicators:
+
+```lua
+require('db_ui').setup({
+  use_nvim_notify = true,
+  notification_width = 50,
+})
 ```
 
-## Mappings
-These are the default mappings for `dbui` drawer:
+## Troubleshooting
 
-* o / \<CR> - Open/Toggle Drawer options (`<Plug>(DBUI_SelectLine)`)
-* S - Open in vertical split (`<Plug>(DBUI_SelectLineVsplit)`)
-* d - Delete buffer or saved sql (`<Plug>(DBUI_DeleteLine)`)
-* R - Redraw (`<Plug>(DBUI_Redraw)`)
-* A - Add connection (`<Plug>(DBUI_AddConnection)`)
-* H - Toggle database details (`<Plug>(DBUI_ToggleDetails)`)
+### Common Issues
 
-For queries, filetype is automatically set to `sql`. Also, two mappings is added for the `sql` filetype:
+1. **Commands not found**: Make sure the plugin is properly loaded and `require('db_ui').setup()` is called.
 
-* \<Leader>W - Permanently save query for later use (`<Plug>(DBUI_SaveQuery)`)
-* \<Leader>E - Edit bind parameters (`<Plug>(DBUI_EditBindParameters)`)
+2. **Connection issues**: Verify your database URLs and ensure vim-dadbod is installed.
 
-Any of these mappings can be overridden:
-```vimL
-autocmd FileType dbui nmap <buffer> v <Plug>(DBUI_SelectLineVsplit)
+3. **Mapping conflicts**: Use the disable options to prevent conflicts:
+   ```lua
+   require('db_ui').setup({
+     disable_mappings_sql = true, -- If you have conflicting SQL mappings
+   })
+   ```
+
+4. **Performance issues**: Enable debug mode to see what's happening:
+   ```lua
+   require('db_ui').setup({
+     debug = true,
+   })
+   ```
+
+### Debug Mode
+
+Enable debug mode to see detailed logging:
+
+```lua
+require('db_ui').setup({
+  debug = true,
+})
 ```
 
-If you don't want mappings to be added, add this to vimrc:
-```vimL
-let g:db_ui_disable_mappings = 1       " Disable all mappings
-let g:db_ui_disable_mappings_dbui = 1  " Disable mappings in DBUI drawer
-let g:db_ui_disable_mappings_dbout = 1 " Disable mappings in DB output
-let g:db_ui_disable_mappings_sql = 1   " Disable mappings in SQL buffers
-let g:db_ui_disable_mappings_javascript = 1   " Disable mappings in Javascript buffers (for Mongodb)
-```
+This will show detailed information about:
+- Connection attempts
+- Query execution
+- Buffer management
+- UI rendering
 
-## Toggle showing postgres views in the drawer
-If you don't want to see any views in the drawer, add this to vimrc:
-This option must be disabled (set to 0) for Redshift.
+## Contributing
 
-```vimL
-let g:db_ui_use_postgres_views = 0
-```
+Contributions are welcome! Please see the original vim-dadbod-ui repository for guidelines.
 
-## Disable builtin progress bar
-If you want to utilize *DBExecutePre or *DBExecutePost to make your own progress bar
-or if you want to disable the progress entirely set to 1.
+## License
 
-```vimL
-let g:db_ui_disable_progress_bar = 1
-```
+Same as the original vim-dadbod-ui plugin.
 
-## TODO
+## Acknowledgments
 
-* [ ] Test with more db types
+- [tpope](https://github.com/tpope) for the amazing vim-dadbod plugin
+- [kristijanhusak](https://github.com/kristijanhusak) for the original vim-dadbod-ui plugin
+- The Neovim community for the excellent Lua API 
