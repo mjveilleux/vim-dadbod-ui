@@ -66,36 +66,36 @@ end
 
 function Drawer:setup_mappings()
   local opts = { buffer = true, silent = true }
-  
-  -- Selection mappings
-  vim.keymap.set('n', '<Plug>(DBUI_SelectLine)', function() self:toggle_line('edit') end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_SelectLineVsplit)', function() self:toggle_line(self:get_split_command()) end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_DeleteLine)', function() self:delete_line() end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_Redraw)', function() self:redraw() end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_AddConnection)', function() self:add_connection() end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_ToggleDetails)', function() self:toggle_details() end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_RenameLine)', function() self:rename_line() end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_Quit)', function() self:quit() end, opts)
-  
-  -- Navigation mappings
-  vim.keymap.set('n', '<Plug>(DBUI_GotoFirstSibling)', function() self:goto_sibling('first') end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_GotoNextSibling)', function() self:goto_sibling('next') end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_GotoPrevSibling)', function() self:goto_sibling('prev') end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_GotoLastSibling)', function() self:goto_sibling('last') end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_GotoParentNode)', function() self:goto_node('parent') end, opts)
-  vim.keymap.set('n', '<Plug>(DBUI_GotoChildNode)', function() self:goto_node('child') end, opts)
-  
-  -- Help toggle
-  vim.keymap.set('n', '?', function() self:toggle_help() end, opts)
+
+  if not config.disable_mappings and not config.disable_mappings_dbui then
+    vim.keymap.set('n', 'o', '<Plug>(DBUI_SelectLine)', opts)
+    vim.keymap.set('n', '<CR>', '<Plug>(DBUI_SelectLine)', opts)
+    vim.keymap.set('n', '<2-LeftMouse>', '<Plug>(DBUI_SelectLine)', opts)
+    vim.keymap.set('n', 'S', '<Plug>(DBUI_SelectLineVsplit)', opts)
+    vim.keymap.set('n', 'R', '<Plug>(DBUI_Redraw)', opts)
+    vim.keymap.set('n', 'd', '<Plug>(DBUI_DeleteLine)', opts)
+    vim.keymap.set('n', 'A', '<Plug>(DBUI_AddConnection)', opts)
+    vim.keymap.set('n', 'H', '<Plug>(DBUI_ToggleDetails)', opts)
+    vim.keymap.set('n', 'r', '<Plug>(DBUI_RenameLine)', opts)
+    vim.keymap.set('n', 'q', '<Plug>(DBUI_Quit)', opts)
+    vim.keymap.set('n', '<c-k>', '<Plug>(DBUI_GotoFirstSibling)', opts)
+    vim.keymap.set('n', '<c-j>', '<Plug>(DBUI_GotoLastSibling)', opts)
+    vim.keymap.set('n', '<C-p>', '<Plug>(DBUI_GotoParentNode)', opts)
+    vim.keymap.set('n', '<C-n>', '<Plug>(DBUI_GotoChildNode)', opts)
+    vim.keymap.set('n', 'K', '<Plug>(DBUI_GotoPrevSibling)', opts)
+    vim.keymap.set('n', 'J', '<Plug>(DBUI_GotoNextSibling)', opts)
+  end
 end
 
 function Drawer:setup_autocmds()
-  local bufnr = vim.api.nvim_get_current_buf()
+  local augroup = vim.api.nvim_create_augroup('dbui_drawer', { clear = true })
   
-  vim.api.nvim_create_autocmd('BufEnter', {
-    buffer = bufnr,
-    callback = function() self:render() end,
-    group = vim.api.nvim_create_augroup('db_ui', { clear = false })
+  vim.api.nvim_create_autocmd('BufUnload', {
+    group = augroup,
+    buffer = 0,
+    callback = function()
+      vim.cmd('silent! doautocmd User DBUIClosed')
+    end
   })
 end
 
@@ -222,258 +222,133 @@ end
 function Drawer:render_help()
   if not self.show_help then
     return
-  end
   
-  self:add('" Help', 'noaction', 'help', '', '', 0)
-  self:add('" o/Enter/<2-LeftMouse> : Open/Toggle', 'noaction', 'help', '', '', 0)
-  self:add('" S : Open in split', 'noaction', 'help', '', '', 0)
-  self:add('" d : Delete', 'noaction', 'help', '', '', 0)
-  self:add('" R : Redraw', 'noaction', 'help', '', '', 0)
-  self:add('" A : Add connection', 'noaction', 'help', '', '', 0)
-  self:add('" H : Toggle details', 'noaction', 'help', '', '', 0)
-  self:add('" r : Rename', 'noaction', 'help', '', '', 0)
-  self:add('" q : Close', 'noaction', 'help', '', '', 0)
-  self:add('', 'noaction', 'help', '', '', 0)
-end
-
-function Drawer:add(label, action, type, icon, dbui_db_key_name, level, extra)
-  extra = extra or {}
-  
-  local item = {
-    label = label,
-    action = action,
-    type = type,
-    icon = icon,
-    dbui_db_key_name = dbui_db_key_name,
-    level = level,
+  local help_text = {
+    '" Press ? for help',
+    '" o or <CR> to open',
+    '" S to open in split',
+    '" R to refresh',
+    '" d to delete',
+    '" A to add connection',
+    '" q to quit',
+    ''
   }
   
-  -- Add extra fields
-  for k, v in pairs(extra) do
-    item[k] = v
+  for _, text in ipairs(help_text) do
+    self:add(text, 'noaction', 'help', '', '', 0)
   end
-  
+end
+
+function Drawer:add(label, action, type, icon, file_path, level)
+  local item = {
+    label = string.rep('  ', level) .. icon .. ' ' .. label,
+    action = action,
+    type = type,
+    file_path = file_path,
+    level = level,
+    dbui_db_key_name = self.current_db_key_name or ''
+  }
   table.insert(self.content, item)
 end
 
 function Drawer:add_db(db)
-  local icon = self:get_toggle_icon('db', db)
-  local connection_status = ''
+  self.current_db_key_name = db.key_name
   
-  if db.conn_tried then
-    if db.conn == '' then
-      connection_status = ' ' .. config.icons.connection_error
-    else
-      connection_status = ' ' .. config.icons.connection_ok
+  local icon = db.expanded and config.icons.expanded.db or config.icons.collapsed.db
+  if db.conn ~= '' then
+    icon = config.icons.connection_ok .. ' ' .. icon
+  elseif db.conn_error ~= '' then
+    icon = config.icons.connection_error .. ' ' .. icon
+  end
+  
+  self:add(db.name, 'toggle', 'db', icon, '', 0)
+  
+  if db.expanded then
+    self:add_db_buffers(db, 1)
+    self:add_db_saved_queries(db, 1)
+    
+    if db.conn ~= '' then
+      if db.schema_support then
+        self:add_db_schemas(db, 1)
+      else
+        self:add_db_tables(db, 1)
+      end
     end
   end
   
-  self:add(
-    db.name .. connection_status,
-    'toggle',
-    'db',
-    icon,
-    db.key_name,
-    0,
-    { expanded = db.expanded }
-  )
-  
-  if not db.expanded then
+  self.current_db_key_name = ''
+end
+
+function Drawer:add_db_buffers(db, level)
+  if #db.buffers.list == 0 then
     return
   end
   
-  -- Add saved queries
-  self:add(
-    'Saved Queries (' .. #db.saved_queries.list .. ')',
-    'toggle',
-    'saved_queries',
-    self:get_toggle_icon('saved_queries', db.saved_queries),
-    db.key_name,
-    1,
-    { expanded = db.saved_queries.expanded }
-  )
+  local icon = db.buffers.expanded and config.icons.expanded.buffers or config.icons.collapsed.buffers
+  self:add('Buffers', 'toggle', 'buffers', icon, '', level)
+  
+  if db.buffers.expanded then
+    for _, buffer in ipairs(db.buffers.list) do
+      local filename = vim.fn.fnamemodify(buffer, ':t')
+      self:add(filename, 'open', 'buffer', config.icons.buffers, buffer, level + 1)
+    end
+  end
+end
+
+function Drawer:add_db_saved_queries(db, level)
+  if #db.saved_queries.list == 0 then
+    return
+  end
+  
+  local icon = db.saved_queries.expanded and config.icons.expanded.saved_queries or config.icons.collapsed.saved_queries
+  self:add('Saved Queries', 'toggle', 'saved_queries', icon, '', level)
   
   if db.saved_queries.expanded then
-    for _, query_file in ipairs(db.saved_queries.list) do
-      local filename = vim.fn.fnamemodify(query_file, ':t')
-      self:add(
-        filename,
-        'open',
-        'buffer',
-        config.icons.saved_query,
-        db.key_name,
-        2,
-        { file_path = query_file, saved = true }
-      )
+    for _, query in ipairs(db.saved_queries.list) do
+      local filename = vim.fn.fnamemodify(query, ':t')
+      self:add(filename, 'open', 'saved_query', config.icons.saved_query, query, level + 1)
     end
     
-    self:add(
-      'New query',
-      'open',
-      'query',
-      config.icons.new_query,
-      db.key_name,
-      2
-    )
-  end
-  
-  -- Add buffers
-  if not vim.tbl_isempty(db.buffers.list) then
-    self:add(
-      'Buffers (' .. #db.buffers.list .. ')',
-      'toggle',
-      'buffers',
-      self:get_toggle_icon('buffers', db.buffers),
-      db.key_name,
-      1,
-      { expanded = db.buffers.expanded }
-    )
-    
-    if db.buffers.expanded then
-      for _, buf in ipairs(db.buffers.list) do
-        local filename = vim.fn.fnamemodify(buf, ':t')
-        self:add(
-          filename,
-          'open',
-          'buffer',
-          config.icons.buffers,
-          db.key_name,
-          2,
-          { file_path = buf }
-        )
-      end
-    end
-  end
-  
-  -- Add schemas or tables
-  if db.schema_support then
-    self:add_schemas(db)
-  else
-    self:add_tables(db)
+    -- Add new query option
+    self:add('New Query', 'open', 'new_query', config.icons.new_query, '', level + 1)
   end
 end
 
-function Drawer:add_schemas(db)
-  self:add(
-    'Schemas (' .. #db.schemas.list .. ')',
-    'toggle',
-    'schemas',
-    self:get_toggle_icon('schemas', db.schemas),
-    db.key_name,
-    1,
-    { expanded = db.schemas.expanded }
-  )
-  
-  if not db.schemas.expanded then
+function Drawer:add_db_tables(db, level)
+  if #db.tables.list == 0 then
     return
   end
   
-  for _, schema in ipairs(db.schemas.list) do
-    local schema_item = db.schemas.items[schema]
-    local tables = schema_item.tables
-    
-    self:add(
-      schema .. ' (' .. #tables.list .. ')',
-      'toggle',
-      'schemas->items->' .. schema,
-      self:get_toggle_icon('schema', schema_item),
-      db.key_name,
-      2,
-      { expanded = schema_item.expanded }
-    )
-    
-    if schema_item.expanded then
-      self:render_tables(tables, db, 'schemas->items->' .. schema .. '->tables->items', 3, schema)
-    end
-  end
-end
-
-function Drawer:add_tables(db)
-  self:add(
-    'Tables (' .. #db.tables.list .. ')',
-    'toggle',
-    'tables',
-    self:get_toggle_icon('tables', db.tables),
-    db.key_name,
-    1,
-    { expanded = db.tables.expanded }
-  )
+  local icon = db.tables.expanded and config.icons.expanded.tables or config.icons.collapsed.tables
+  self:add('Tables', 'toggle', 'tables', icon, '', level)
   
-  self:render_tables(db.tables, db, 'tables->items', 2, '')
-end
-
-function Drawer:render_tables(tables, db, path, level, schema)
-  if not tables.expanded then
-    return
-  end
-  
-  local tables_list = tables.list
-  if config.table_name_sorter and type(config.table_name_sorter) == 'function' then
-    tables_list = config.table_name_sorter(tables.list)
-  end
-  
-  for _, table in ipairs(tables_list) do
-    self:add(
-      table,
-      'toggle',
-      path .. '->' .. table,
-      self:get_toggle_icon('table', tables.items[table]),
-      db.key_name,
-      level,
-      { expanded = tables.items[table].expanded }
-    )
-    
-    if tables.items[table].expanded then
-      for helper_name, helper in pairs(db.table_helpers) do
-        self:add(
-          helper_name,
-          'open',
-          'table',
-          config.icons.tables,
-          db.key_name,
-          level + 1,
-          {
-            table = table,
-            content = helper,
-            schema = schema,
-            label = helper_name
-          }
-        )
+  if db.tables.expanded then
+    for _, table in ipairs(db.tables.list) do
+      local table_icon = db.tables.items[table].expanded and config.icons.expanded.table or config.icons.collapsed.table
+      self:add(table, 'toggle', 'table', table_icon, '', level + 1)
+      
+      if db.tables.items[table].expanded then
+        -- Add table helpers
+        for helper_name, _ in pairs(config.table_helpers) do
+          self:add(helper_name, 'open', 'table_helper', '', '', level + 2)
+        end
       end
     end
   end
+end
+
+function Drawer:add_db_schemas(db, level)
+  -- Schema support implementation would go here
+  return
 end
 
 function Drawer:add_dbout_list()
-  if not self.show_dbout_list then
-    return
-  end
-  
-  self:add('DB Out', 'toggle', 'dbout_list', '', '', 0)
-  
-  for file_path, content in pairs(self.dbui.dbout_list) do
-    local filename = vim.fn.fnamemodify(file_path, ':t')
-    local display = filename
-    if content and content ~= '' then
-      display = filename .. ' (' .. content .. ')'
+  if self.show_dbout_list then
+    for _, dbout in ipairs(self.dbui.dbout_list) do
+      local filename = vim.fn.fnamemodify(dbout, ':t')
+      self:add(filename, 'open', 'dbout', config.icons.saved_query, dbout, 0)
     end
-    
-    self:add(
-      display,
-      'open',
-      'dbout',
-      '',
-      '',
-      1,
-      { file_path = file_path }
-    )
   end
-end
-
-function Drawer:get_toggle_icon(type, item)
-  local expanded = item and item.expanded or false
-  local icon_set = expanded and config.icons.expanded or config.icons.collapsed
-  return icon_set[type] or (expanded and '▾' or '▸')
 end
 
 function Drawer:get_current_item()
@@ -710,92 +585,103 @@ end
 
 -- Navigation functions
 function Drawer:goto_sibling(direction)
-  -- Implementation for sibling navigation
-  local current_line = vim.fn.line('.')
-  local item = self.content[current_line]
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local current_item = self:get_current_item()
   
-  if not item then
+  if not current_item or current_item.level == nil then
     return
   end
   
-  local current_level = item.level
-  local target_line = current_line
+  local target_line = nil
+  local current_level = current_item.level
   
-  if direction == 'next' then
-    for i = current_line + 1, #self.content do
-      local next_item = self.content[i]
-      if next_item.level == current_level then
-        target_line = i
-        break
-      elseif next_item.level < current_level then
-        break
-      end
-    end
-  elseif direction == 'prev' then
-    for i = current_line - 1, 1, -1 do
-      local prev_item = self.content[i]
-      if prev_item.level == current_level then
-        target_line = i
-        break
-      elseif prev_item.level < current_level then
-        break
-      end
-    end
-  elseif direction == 'first' then
-    for i = 1, current_line - 1 do
-      local first_item = self.content[i]
-      if first_item.level == current_level then
+  if direction == 'first' then
+    -- Find first sibling at same level
+    for i = 1, #self.content do
+      local item = self.content[i]
+      if item.level == current_level then
         target_line = i
         break
       end
     end
   elseif direction == 'last' then
-    for i = #self.content, current_line + 1, -1 do
-      local last_item = self.content[i]
-      if last_item.level == current_level then
+    -- Find last sibling at same level
+    for i = #self.content, 1, -1 do
+      local item = self.content[i]
+      if item.level == current_level then
         target_line = i
         break
       end
     end
+  elseif direction == 'next' then
+    -- Find next sibling at same level
+    for i = current_line + 1, #self.content do
+      local item = self.content[i]
+      if item.level == current_level then
+        target_line = i
+        break
+      elseif item.level < current_level then
+        break -- Gone up a level, no more siblings
+      end
+    end
+  elseif direction == 'prev' then
+    -- Find previous sibling at same level
+    for i = current_line - 1, 1, -1 do
+      local item = self.content[i]
+      if item.level == current_level then
+        target_line = i
+        break
+      elseif item.level < current_level then
+        break -- Gone up a level, no more siblings
+      end
+    end
   end
   
-  vim.fn.cursor(target_line, vim.fn.col('.'))
+  if target_line then
+    vim.api.nvim_win_set_cursor(0, {target_line, 0})
+  end
 end
 
-function Drawer:goto_node(direction)
-  local current_line = vim.fn.line('.')
-  local item = self.content[current_line]
+function Drawer:goto_parent()
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local current_item = self:get_current_item()
   
-  if not item then
+  if not current_item or current_item.level == nil or current_item.level == 0 then
     return
   end
   
-  local current_level = item.level
-  local target_line = current_line
+  local target_level = current_item.level - 1
   
-  if direction == 'parent' then
-    for i = current_line - 1, 1, -1 do
-      local parent_item = self.content[i]
-      if parent_item.level < current_level then
-        target_line = i
-        break
-      end
-    end
-  elseif direction == 'child' then
-    if current_line < #self.content then
-      local child_item = self.content[current_line + 1]
-      if child_item and child_item.level > current_level then
-        target_line = current_line + 1
-      end
+  -- Find parent (first item with level one less than current)
+  for i = current_line - 1, 1, -1 do
+    local item = self.content[i]
+    if item.level == target_level then
+      vim.api.nvim_win_set_cursor(0, {i, 0})
+      break
     end
   end
+end
+
+function Drawer:goto_child()
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local current_item = self:get_current_item()
   
-  vim.fn.cursor(target_line, vim.fn.col('.'))
+  if not current_item or current_item.level == nil then
+    return
+  end
+  
+  local target_level = current_item.level + 1
+  
+  -- Find first child (next item with level one more than current)
+  for i = current_line + 1, #self.content do
+    local item = self.content[i]
+    if item.level == target_level then
+      vim.api.nvim_win_set_cursor(0, {i, 0})
+      break
+    elseif item.level <= current_item.level then
+      break -- No children found
+    end
+  end
 end
 
-function Drawer:rename_line()
-  -- Implementation for renaming
-  notifications.info('Rename functionality to be implemented')
-end
-
-return M 
+return M

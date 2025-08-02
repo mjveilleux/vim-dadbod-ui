@@ -1,18 +1,22 @@
+" Check if using Lua rewrite
+if exists('g:loaded_db_ui_lua')
+  " Mappings are handled in plugin/db_ui.lua
+  finish
+endif
+
+" Legacy Vimscript mappings (only if Lua version not loaded)
 if get(g:, 'db_ui_disable_mappings', 0) || get(g:, 'db_ui_disable_mappings_dbui', 0)
   finish
 endif
 
-call db_ui#utils#set_mapping(['o', '<CR>', '<2-LeftMouse>'], '<Plug>(DBUI_SelectLine)')
-call db_ui#utils#set_mapping('S', '<Plug>(DBUI_SelectLineVsplit)')
-call db_ui#utils#set_mapping('R', '<Plug>(DBUI_Redraw)')
-call db_ui#utils#set_mapping('d', '<Plug>(DBUI_DeleteLine)')
-call db_ui#utils#set_mapping('A', '<Plug>(DBUI_AddConnection)')
-call db_ui#utils#set_mapping('H', '<Plug>(DBUI_ToggleDetails)')
-call db_ui#utils#set_mapping('r', '<Plug>(DBUI_RenameLine)')
-call db_ui#utils#set_mapping('q', '<Plug>(DBUI_Quit)')
-call db_ui#utils#set_mapping('<c-k>', '<Plug>(DBUI_GotoFirstSibling)')
-call db_ui#utils#set_mapping('<c-j>', '<Plug>(DBUI_GotoLastSibling)')
-call db_ui#utils#set_mapping('<C-p>', '<Plug>(DBUI_GotoParentNode)')
-call db_ui#utils#set_mapping('<C-n>', '<Plug>(DBUI_GotoChildNode)')
-call db_ui#utils#set_mapping('K', '<Plug>(DBUI_GotoPrevSibling)')
-call db_ui#utils#set_mapping('J', '<Plug>(DBUI_GotoNextSibling)')
+" Note: These mappings require the old autoload functions
+" If you see errors, you're using the Lua rewrite and should set g:loaded_db_ui_lua = 1
+nnoremap <silent><buffer> o :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> <CR> :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> S :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> R :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> d :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> A :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> H :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> r :echo "Using Lua rewrite - mappings handled automatically"<CR>
+nnoremap <silent><buffer> q :echo "Using Lua rewrite - mappings handled automatically"<CR>

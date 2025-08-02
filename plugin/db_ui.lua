@@ -23,7 +23,9 @@ vim.api.nvim_create_autocmd('BufReadPost', {
   group = augroup,
   pattern = '*.dbout',
   callback = function()
-    vim.cmd('silent! call db_ui#save_dbout(expand("<afile>"))')
+    -- TODO: Implement dbout saving in Lua
+    -- For now, just set filetype
+    vim.bo.filetype = 'dbout'
   end
 })
 
@@ -31,8 +33,9 @@ vim.api.nvim_create_autocmd('FileType', {
   group = augroup,
   pattern = 'dbout',
   callback = function()
-    vim.opt_local.foldmethod = 'expr'
-    vim.opt_local.foldexpr = 'db_ui#dbout#foldexpr(v:lnum)'
+    -- TODO: Implement dbout folding in Lua
+    -- For now, use basic folding
+    vim.opt_local.foldmethod = 'indent'
     vim.cmd('silent! normal!zo')
   end
 })
@@ -78,6 +81,89 @@ vim.api.nvim_create_user_command('DBUILastQueryInfo', function()
   -- This will be implemented
   vim.notify('DBUILastQueryInfo not yet implemented', vim.log.levels.WARN)
 end, { desc = 'Show last query information' })
+
+-- Define <Plug> mappings for DBUI functionality
+local function setup_dbui_plugs()
+  local db_ui = require('db_ui')
+  
+  vim.keymap.set('n', '<Plug>(DBUI_SelectLine)', function()
+    db_ui.toggle_line()
+  end, { desc = 'DBUI: Select line' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_SelectLineVsplit)', function()
+    db_ui.toggle_line('vsplit')
+  end, { desc = 'DBUI: Select line (vertical split)' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_Redraw)', function()
+    db_ui.redraw()
+  end, { desc = 'DBUI: Redraw' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_DeleteLine)', function()
+    db_ui.delete_line()
+  end, { desc = 'DBUI: Delete line' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_AddConnection)', function()
+    db_ui.add_connection()
+  end, { desc = 'DBUI: Add connection' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_ToggleDetails)', function()
+    db_ui.toggle_details()
+  end, { desc = 'DBUI: Toggle details' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_RenameLine)', function()
+    vim.notify('Rename functionality not yet implemented', vim.log.levels.WARN)
+  end, { desc = 'DBUI: Rename line' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_Quit)', function()
+    db_ui.quit()
+  end, { desc = 'DBUI: Quit' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_GotoFirstSibling)', function()
+    db_ui.goto_sibling('first')
+  end, { desc = 'DBUI: Go to first sibling' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_GotoLastSibling)', function()
+    db_ui.goto_sibling('last')
+  end, { desc = 'DBUI: Go to last sibling' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_GotoParentNode)', function()
+    db_ui.goto_parent()
+  end, { desc = 'DBUI: Go to parent node' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_GotoChildNode)', function()
+    db_ui.goto_child()
+  end, { desc = 'DBUI: Go to child node' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_GotoPrevSibling)', function()
+    db_ui.goto_sibling('prev')
+  end, { desc = 'DBUI: Go to previous sibling' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_GotoNextSibling)', function()
+    db_ui.goto_sibling('next')
+  end, { desc = 'DBUI: Go to next sibling' })
+end
+
+-- Define <Plug> mappings for SQL buffers
+local function setup_sql_plugs()
+  vim.keymap.set('n', '<Plug>(DBUI_SaveQuery)', function()
+    local query = require('db_ui.query'):new()
+    query:save_file()
+  end, { desc = 'DBUI: Save query' })
+  
+  vim.keymap.set('n', '<Plug>(DBUI_EditBindParameters)', function()
+    local query = require('db_ui.query'):new()
+    query:edit_bind_parameters()
+  end, { desc = 'DBUI: Edit bind parameters' })
+  
+  vim.keymap.set({'n', 'v'}, '<Plug>(DBUI_ExecuteQuery)', function()
+    local query = require('db_ui.query'):new()
+    query:execute_query()
+  end, { desc = 'DBUI: Execute query' })
+end
+
+-- Setup <Plug> mappings immediately
+setup_dbui_plugs()
+setup_sql_plugs()
 
 -- Load filetype plugins if not disabled
 if not config.disable_mappings and not config.disable_mappings_dbui then

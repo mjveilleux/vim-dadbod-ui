@@ -63,7 +63,7 @@ function DBUI:populate_dbs()
         self.dbs[key_name] = new_entry
       end
     else
-      self.dbs[key_name] = self.drawer:populate(self.dbs[key_name])
+      self.dbs[key_name] = self.dbs[key_name]
     end
   end
 end
@@ -73,7 +73,7 @@ function DBUI:populate_from_global_variable()
     local url = self:resolve_url_global_variable(vim.g.db)
     local gdb_name = vim.split(url, '/')
     gdb_name = gdb_name[#gdb_name]
-    self:add_if_not_exists(gdb_name, url, 'g:dbs')
+    self:add_if_not_exists(gdb_name, url, 'g:db')
   end
   
   if not vim.g.dbs or vim.tbl_isempty(vim.g.dbs) then
@@ -338,6 +338,56 @@ end
 
 function M.reset_state()
   dbui_instance = nil
+end
+
+-- Expose drawer methods for <Plug> mappings
+function M.get_instance()
+  return DBUI:get_instance()
+end
+
+function M.toggle_line(edit_action)
+  local instance = DBUI:get_instance()
+  return instance.drawer:toggle_line(edit_action)
+end
+
+function M.redraw()
+  local instance = DBUI:get_instance()
+  return instance.drawer:redraw()
+end
+
+function M.delete_line()
+  local instance = DBUI:get_instance()
+  return instance.drawer:delete_line()
+end
+
+function M.add_connection()
+  local instance = DBUI:get_instance()
+  return instance.drawer:add_connection()
+end
+
+function M.toggle_details()
+  local instance = DBUI:get_instance()
+  return instance.drawer:toggle_details()
+end
+
+function M.quit()
+  local instance = DBUI:get_instance()
+  return instance.drawer:quit()
+end
+
+function M.goto_sibling(direction)
+  local instance = DBUI:get_instance()
+  return instance.drawer:goto_sibling(direction)
+end
+
+function M.goto_parent()
+  local instance = DBUI:get_instance()
+  return instance.drawer:goto_parent()
+end
+
+function M.goto_child()
+  local instance = DBUI:get_instance()
+  return instance.drawer:goto_child()
 end
 
 return M 
