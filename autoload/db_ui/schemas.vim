@@ -114,26 +114,25 @@ let s:postgresql = {
       \ 'quote': 1,
       \ }
 
-" let s:sqlserver_foreign_keys_query = "
-"       \ SELECT TOP 1 c2.table_name as foreign_table_name, kcu2.column_name as foreign_column_name, kcu2.table_schema as foreign_table_schema
-"       \ from   information_schema.table_constraints c
-"       \        inner join information_schema.key_column_usage kcu
-"       \          on c.constraint_schema = kcu.constraint_schema and c.constraint_name = kcu.constraint_name
-"       \        inner join information_schema.referential_constraints rc
-"       \          on c.constraint_schema = rc.constraint_schema and c.constraint_name = rc.constraint_name
-"       \        inner join information_schema.table_constraints c2
-"       \          on rc.unique_constraint_schema = c2.constraint_schema and rc.unique_constraint_name = c2.constraint_name
-"       \        inner join information_schema.key_column_usage kcu2
-"       \          on c2.constraint_schema = kcu2.constraint_schema and c2.constraint_name = kcu2.constraint_name and kcu.ordinal_position = kcu2.ordinal_position
-"       \ where  c.constraint_type = 'FOREIGN KEY'
-"       \ and kcu.column_name = '{col_name}'
-"       \ "
+let s:sqlserver_foreign_key_query = "
+      \ SELECT TOP 1 c2.table_name as foreign_table_name, kcu2.column_name as foreign_column_name, kcu2.table_schema as foreign_table_schema
+      \ from   information_schema.table_constraints c
+      \        inner join information_schema.key_column_usage kcu
+      \          on c.constraint_schema = kcu.constraint_schema and c.constraint_name = kcu.constraint_name
+      \        inner join information_schema.referential_constraints rc
+      \          on c.constraint_schema = rc.constraint_schema and c.constraint_name = rc.constraint_name
+      \        inner join information_schema.table_constraints c2
+      \          on rc.unique_constraint_schema = c2.constraint_schema and rc.unique_constraint_name = c2.constraint_name
+      \        inner join information_schema.key_column_usage kcu2
+      \          on c2.constraint_schema = kcu2.constraint_schema and c2.constraint_name = kcu2.constraint_name and kcu.ordinal_position = kcu2.ordinal_position
+      \ where  c.constraint_type = 'FOREIGN KEY'
+      \ and kcu.column_name = '{col_name}'"
 
 let s:sqlserver = {
       \   'args': g:db_ui_sqlserver_enhanced_formatting 
       \     ? ['-h-1', '-W', '-s', '|', '-m', '1']
       \     : ['-h-1', '-W', '-s', '|', '-Q','\s\s\+','\t'],
-      \   'foreign_key_query': trim(s:sqlserver_foreign_keys_query),
+      \   'foreign_key_query': trim(s:sqlserver_foreign_key_query),
       \   'schemes_query': 'SELECT schema_name FROM INFORMATION_SCHEMA.SCHEMATA',
       \   'schemes_tables_query': 'SELECT table_schema, table_name FROM INFORMATION_SCHEMA.TABLES',
       \   'select_foreign_key_query': 'select * from %s.%s where %s = %s',
