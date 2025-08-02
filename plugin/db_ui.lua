@@ -210,10 +210,7 @@ config.setup()
 -- Export icons to global variable for syntax highlighting
 vim.g.db_ui_icons = config.icons
 
--- Export compatibility function for vim-dadbod-completion
-vim.cmd([[
-function! db_ui#get_conn_info(...)
-  let db_key_name = get(a:, 1, '')
-  return luaeval('require("db_ui").get_conn_info(_A)', db_key_name)
-endfunction
-]]) 
+-- Export global Lua function for vim-dadbod-completion
+_G.db_ui_get_conn_info = function(db_key_name)
+  return require('db_ui').get_conn_info(db_key_name)
+end 
