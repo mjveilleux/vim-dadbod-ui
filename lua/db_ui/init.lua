@@ -401,4 +401,23 @@ function DBUI:is_tmp_location_buffer(db, buffer_name)
   return string.find(buffer_dir, self.tmp_location, 1, true) == 1
 end
 
+-- Compatibility function for vim-dadbod-completion
+function M.get_conn_info(db_key_name)
+  local instance = DBUI:get_instance()
+  if not db_key_name then
+    db_key_name = vim.b.dbui_db_key_name
+  end
+  
+  if not db_key_name or not instance.dbs[db_key_name] then
+    return {}
+  end
+  
+  local db = instance.dbs[db_key_name]
+  return {
+    conn = db.conn,
+    table = vim.b.dbui_table_name or '',
+    schema = vim.b.dbui_schema_name or ''
+  }
+end
+
 return M 

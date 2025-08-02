@@ -248,7 +248,7 @@ function Query:setup_buffer(db, opts, buffer_name, was_single_win)
   -- Set filetype and options
   if vim.bo.filetype ~= db.filetype or not is_existing_buffer then
     vim.bo.swapfile = false
-    vim.bo.wrap = false
+    vim.wo.wrap = false
     vim.bo.spell = false
     vim.bo.modifiable = true
     vim.bo.filetype = db.filetype
