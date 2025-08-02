@@ -18,24 +18,55 @@ function! s:results_parser(results, delimiter, min_len) abort
 endfunction
 
 
-" Add SQL Server specific parser that trims trailing whitespace
+" Enhanced SQL Server specific parser that handles spacing issues
 function! s:sqlserver_results_parser(results, min_len) abort
   let filtered_results = a:results[0:-3]
   if a:min_len ==? 1
     return filter(filtered_results, '!empty(trim(v:val))')
   endif
   
-  " Split by delimiter and trim trailing whitespace from each cell
-  let mapped = map(filtered_results, {_,row -> 
-    \ map(filter(split(row, '|'), '!empty(trim(v:val))'), 
-    \     {_,cell -> substitute(cell, '\s\+$', '', '')})
-    \ })
+  " Enhanced processing for SQL Server output formatting issues
+  let mapped = []
+  for row in filtered_results
+    " Handle different delimiter scenarios that SQL Server produces
+    let processed_row = row
+    
+    " Convert multiple spaces to single pipe delimiter if enhanced formatting is enabled
+    if g:db_ui_sqlserver_enhanced_formatting
+      " Replace multiple whitespace sequences with pipes, but preserve single spaces within data
+      let processed_row = substitute(processed_row, '\s\{3,}', '|', 'g')
+      " Clean up any remaining tab characters
+      let processed_row = substitute(processed_row, '\t', '|', 'g')
+    endif
+    
+    " Split by delimiter and process each cell
+    let cells = filter(split(processed_row, '|'), '!empty(trim(v:val))')
+    
+    " Apply whitespace trimming if enabled
+    if g:db_ui_sqlserver_trim_whitespace
+      let cells = map(cells, {_,cell -> 
+        \ len(trim(cell)) > g:db_ui_sqlserver_max_column_width 
+        \ ? trim(cell)[0:g:db_ui_sqlserver_max_column_width-1] . '...'
+        \ : substitute(trim(cell), '\s\+', ' ', 'g')
+        \ })
+    else
+      let cells = map(cells, {_,cell -> substitute(cell, '\s\+$', '', '')})
+    endif
+    
+    " Only add rows that have cells
+    if !empty(cells)
+      call add(mapped, cells)
+    endif
+  endfor
   
   if a:min_len > 1
     return filter(mapped, 'len(v:val) ==? '.a:min_len)
   endif
 
   let counts = map(copy(mapped), 'len(v:val)')
+  if empty(counts)
+    return []
+  endif
   let min_len = max(counts)
 
   return filter(mapped,'len(v:val) ==? '.min_len)
@@ -99,13 +130,15 @@ let s:postgresql = {
 "       \ "
 
 let s:sqlserver = {
-      \   'args': ['-h-1', '-W', '-s', '|', '-Q','\s\s\+','\t'],
+      \   'args': g:db_ui_sqlserver_enhanced_formatting 
+      \     ? ['-h-1', '-W', '-s', '|', '-m', '1']
+      \     : ['-h-1', '-W', '-s', '|', '-Q','\s\s\+','\t'],
       \   'foreign_key_query': trim(s:sqlserver_foreign_keys_query),
       \   'schemes_query': 'SELECT schema_name FROM INFORMATION_SCHEMA.SCHEMATA',
       \   'schemes_tables_query': 'SELECT table_schema, table_name FROM INFORMATION_SCHEMA.TABLES',
       \   'select_foreign_key_query': 'select * from %s.%s where %s = %s',
       \   'cell_line_number': 2,
-      \   'cell_line_pattern': '^-\+.-\+',
+      \   'cell_line_pattern': g:db_ui_sqlserver_enhanced_formatting ? '^-\+\(|-\+\)*' : '^-\+.-\+',
       \   'parse_results': {results, min_len -> s:sqlserver_results_parser(results, min_len)},
       \   'quote': 0,
       \   'default_scheme': 'dbo',

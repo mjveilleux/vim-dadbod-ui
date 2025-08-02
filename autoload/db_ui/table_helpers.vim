@@ -172,7 +172,9 @@ let s:sqlserver_constraints_query = "
       \ where TABLE_NAME = '{table}' and u.TABLE_SCHEMA = '{schema}'"
 
 let s:sqlserver = {
-      \ 'List': 'select top 200 * from {optional_schema}[{table}]',
+      \ 'List': 'SELECT TOP 200 * FROM {optional_schema}[{table}]',
+      \ 'List Compact': 'SET NOCOUNT ON; SELECT TOP 200 * FROM {optional_schema}[{table}] ORDER BY 1',
+      \ 'List Tabular': 'SELECT TOP 200 * FROM {optional_schema}[{table}] FOR JSON AUTO',
       \ 'Columns': s:sqlserver_column_summary_query,
       \ 'Indexes': 'exec sp_helpindex ''{schema}.{table}''',
       \ 'Foreign Keys': s:sqlserver_foreign_keys_query,

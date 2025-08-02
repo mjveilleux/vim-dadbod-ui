@@ -136,6 +136,14 @@ function! s:get_cell_range(cell_line_number, curpos, scheme) abort
     return s:get_virtual_cell_range(a:cell_line_number, a:curpos)
   endif
 
+  " Enhanced cell detection for SQL Server
+  if exists('b:db') && exists('g:db_ui_sqlserver_enhanced_formatting') && g:db_ui_sqlserver_enhanced_formatting
+    let parsed = db#url#parse(b:db)
+    if parsed.scheme =~? 'sqlserver'
+      return s:get_sqlserver_cell_range(a:cell_line_number, a:curpos, a:scheme)
+    endif
+  endif
+
   let line = getline(a:cell_line_number)
   let table_line = '-'
 
@@ -155,6 +163,43 @@ function! s:get_cell_range(cell_line_number, curpos, scheme) abort
     let col += 1
   endwhile
 
+  return {'from': from, 'to': to}
+endfunction
+
+" Enhanced cell range detection specifically for SQL Server
+function! s:get_sqlserver_cell_range(cell_line_number, curpos, scheme) abort
+  let line = getline(a:cell_line_number)
+  let col = a:curpos[2] - 1
+  
+  " Look for multiple separator patterns SQL Server might use
+  let separators = ['-', '|', '+']
+  let from = 0
+  let to = len(line) - 1
+  
+  " Find start of current cell
+  for sep in separators
+    let temp_col = col
+    while temp_col >= 0 && line[temp_col] !=? sep
+      let temp_col -= 1
+    endwhile
+    if temp_col >= 0
+      let from = temp_col + 1
+      break
+    endif
+  endfor
+  
+  " Find end of current cell  
+  for sep in separators
+    let temp_col = col
+    while temp_col < len(line) && line[temp_col] !=? sep
+      let temp_col += 1
+    endwhile
+    if temp_col < len(line)
+      let to = temp_col - 1
+      break
+    endif
+  endfor
+  
   return {'from': from, 'to': to}
 endfunction
 

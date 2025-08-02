@@ -33,6 +33,12 @@ let g:db_ui_debug = get(g:, 'db_ui_debug', 0)
 let g:db_ui_hide_schemas = get(g:, 'db_ui_hide_schemas', [])
 let g:db_ui_bind_param_pattern = get(g: , 'db_ui_bind_param_pattern', ':\w\+')
 let g:db_ui_is_oracle_legacy = get(g:, 'db_ui_is_oracle_legacy', 0)
+
+" SQL Server specific configuration options for enhanced table formatting
+let g:db_ui_sqlserver_enhanced_formatting = get(g:, 'db_ui_sqlserver_enhanced_formatting', 1)
+let g:db_ui_sqlserver_trim_whitespace = get(g:, 'db_ui_sqlserver_trim_whitespace', 1)
+let g:db_ui_sqlserver_max_column_width = get(g:, 'db_ui_sqlserver_max_column_width', 50)
+
 let s:dbui_icons = get(g:, 'db_ui_icons', {})
 let s:expanded_icon = get(s:dbui_icons, 'expanded', '▾')
 let s:collapsed_icon = get(s:dbui_icons, 'collapsed', '▸')
