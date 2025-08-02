@@ -255,7 +255,7 @@ function Query:setup_buffer(db, opts, buffer_name, was_single_win)
     
     -- Set up completion after filetype is set
     vim.schedule(function()
-      vim.cmd('call vim_dadbod_ui#setup_completion()')
+      vim.cmd('call db_ui#setup_completion()')
     end)
   end
   
