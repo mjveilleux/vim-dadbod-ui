@@ -222,6 +222,7 @@ end
 function Drawer:render_help()
   if not self.show_help then
     return
+  end
   
   local help_text = {
     '" Press ? for help',
